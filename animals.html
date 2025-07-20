@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animals - Vocabulary - Language Learning App</title>
+    <title>Clothing</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         html {
@@ -98,7 +98,7 @@
     <div class="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 flex flex-col pattern-container">
         <header class="header-container bg-blue-600 text-white p-4 shadow-lg">
             <div class="max-w-md mx-auto">
-                <h1 class="text-3xl font-bold text-center">Animal - Soo</h1>
+                <h1 class="text-3xl font-bold text-center">Clothes - Klaris</h1>
             </div>
         </header>
         <nav class="nav-container shadow-md p-2">
@@ -112,10 +112,20 @@
             <section id="overview-section" class="grid grid-cols-1 gap-12 max-w-md mx-auto">
             </section>
             <section id="flashcards-section" class="hidden flex flex-col items-center max-w-md mx-auto">
+                <div class="mb-4">
+                    <label class="inline-flex items-center mr-4">
+                        <input type="radio" name="flashcard-mode" value="random" checked class="mr-2">
+                        <span>Random (with cooldown)</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="flashcard-mode" value="alphabetical" class="mr-2">
+                        <span>Alphabetical</span>
+                    </label>
+                </div>
                 <div class="flashcard" id="flashcard-container">
                     <div class="flashcard-inner">
                         <div class="flashcard-front">
-                            <img id="flashcard-image" src="" alt="Animal" class="w-48 h-48 object-cover rounded mb-4">
+                            <img id="flashcard-image" src="" alt="Clothing" class="w-48 h-48 object-cover rounded mb-4">
                             <h2 class="text-xl font-semibold text-gray-800" id="flashcard-word"></h2>
                         </div>
                         <div class="flashcard-back">
@@ -127,7 +137,7 @@
             </section>
             <section id="test-section" class="hidden flex flex-col items-center max-w-md mx-auto">
                 <div class="bg-white rounded-lg shadow-md p-6 w-full">
-                    <img id="test-image" src="" alt="Animal" class="w-48 h-48 object-cover rounded mb-4 mx-auto">
+                    <img id="test-image" src="" alt="Clothing" class="w-48 h-48 object-cover rounded mb-4 mx-auto">
                     <input id="test-input" type="text" placeholder="Enter translation" class="border border-gray-300 rounded p-2 mb-4 w-full">
                     <div class="flex justify-between">
                         <button id="test-submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Submit</button>
@@ -142,7 +152,7 @@
         </main>
     </div>
     <script>
-        const animals = [
+                const animals = [
             { word: "Monkey", translation: "Gnisus", image: "https://i.imgur.com/vJtlBWM.png", link: "https://example.com/monkey" },
             { word: "Alpaka", translation: "Al Aboc", image: "https://i.imgur.com/agGh5eh.png", link: "https://example.com/dog" },
             { word: "Polar Bear", translation: "Eisata", image: "https://i.imgur.com/5GbXrOr.png", link: "https://example.com/elephant" },
@@ -237,6 +247,8 @@
         // State variables
         let currentFlashcardIndex = 0;
         let recentlyTestedIndices = [];
+        let recentlyFlashcardIndices = [];
+        let flashcardMode = 'random'; // Default mode
         
         // Initialize the app
         function init() {
@@ -252,6 +264,20 @@
             overviewTab.addEventListener('click', () => showSection('overview-section'));
             flashcardsTab.addEventListener('click', () => showSection('flashcards-section'));
             testTab.addEventListener('click', () => showSection('test-section'));
+            
+            // Set up event listeners for mode toggle
+            document.querySelectorAll('input[name="flashcard-mode"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    flashcardMode = e.target.value;
+                    if (flashcardMode === 'random') {
+                        recentlyFlashcardIndices = [];
+                        currentFlashcardIndex = getRandomFlashcardIndex();
+                    } else {
+                        currentFlashcardIndex = 0; // Start from the beginning for alphabetical
+                    }
+                    showFlashcard();
+                });
+            });
             
             // Calculate scrollbar width to prevent layout shift
             const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -300,8 +326,12 @@
         
         // Set up flashcards functionality
         function setupFlashcards() {
-            // Start with a random card
-            currentFlashcardIndex = Math.floor(Math.random() * animals.length);
+            // Start with a random card or first card based on mode
+            if (flashcardMode === 'random') {
+                currentFlashcardIndex = getRandomFlashcardIndex();
+            } else {
+                currentFlashcardIndex = 0;
+            }
             showFlashcard();
             
             // Event listeners
@@ -312,9 +342,8 @@
         function showFlashcard() {
             const animal = animals[currentFlashcardIndex];
             flashcardImage.src = animal.image;
-            flashcardWord.textContent = animal.word;
+            flashcardWord.innerHTML = animal.word; // Use innerHTML to render <br>
             flashcardTranslation.textContent = animal.translation;
-            // Ensure we're on the front side (image side)
             flashcardContainer.classList.remove('flipped');
         }
         
@@ -322,41 +351,51 @@
             flashcardContainer.classList.toggle('flipped');
         }
         
+        function getRandomFlashcardIndex() {
+            const allIndices = animals.map((_, index) => index);
+            const availableIndices = allIndices.filter(index => !recentlyFlashcardIndices.includes(index));
+            
+            if (availableIndices.length === 0) {
+                recentlyFlashcardIndices = [];
+                return Math.floor(Math.random() * animals.length);
+            }
+            
+            const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            recentlyFlashcardIndices.push(randomIndex);
+            
+            if (recentlyFlashcardIndices.length > 10) {
+                recentlyFlashcardIndices.shift();
+            }
+            
+            return randomIndex;
+        }
+        
         function nextFlashcard(event) {
-    // Prevent the click on the button from also flipping the card itself
-    event.stopPropagation();
-
-    const flashcardInner = flashcardContainer.querySelector('.flashcard-inner');
-
-    // 1. Temporarily disable the transition
-    flashcardInner.style.transition = 'none';
-
-    // 2. Remove the 'flipped' class instantly
-    flashcardContainer.classList.remove('flipped');
-
-    // 3. Immediately move to the next card's data
-    currentFlashcardIndex = (currentFlashcardIndex + 1) % animals.length;
-    showFlashcard(); // This will update the content of the front side
-
-    // 4. Force a reflow/repaint to ensure the `transition: none` is applied
-    // before the transition is re-enabled. This is a common browser trick.
-    void flashcardInner.offsetWidth; // Accessing offsetWidth forces a reflow
-
-    // 5. Re-enable the transition after a minimal delay (or instantly if possible)
-    // A small setTimeout ensures the browser processes the 'none' before re-applying.
-    setTimeout(() => {
-        flashcardInner.style.transition = 'transform 0.6s';
-    }, 50); // A very small delay, like 50ms, is usually sufficient
-}
+            event.stopPropagation();
+            const flashcardInner = flashcardContainer.querySelector('.flashcard-inner');
+            flashcardInner.style.transition = 'none';
+            flashcardContainer.classList.remove('flipped');
+            
+            if (flashcardMode === 'random') {
+                currentFlashcardIndex = getRandomFlashcardIndex();
+            } else {
+                currentFlashcardIndex = (currentFlashcardIndex + 1) % animals.length;
+            }
+            
+            showFlashcard();
+            
+            void flashcardInner.offsetWidth;
+            setTimeout(() => {
+                flashcardInner.style.transition = 'transform 0.6s';
+            }, 50);
+        }
         
         // Set up test functionality
         function setupTest() {
-            // Reset test state
             recentlyTestedIndices = [];
             currentTestIndex = getRandomTestIndex();
             showTestQuestion();
             
-            // Event listeners
             testSubmit.addEventListener('click', checkAnswer);
             skipTestBtn.addEventListener('click', skipQuestion);
             testInput.addEventListener('keypress', (e) => {
@@ -365,27 +404,17 @@
         }
         
         function getRandomTestIndex() {
-            // Get all possible indices
             const allIndices = animals.map((_, index) => index);
+            const availableIndices = allIndices.filter(index => !recentlyTestedIndices.includes(index));
             
-            // Filter out recently tested indices
-            const availableIndices = allIndices.filter(index => 
-                !recentlyTestedIndices.includes(index)
-            );
-            
-            // If all indices have been recently tested, reset the recently tested list
             if (availableIndices.length === 0) {
                 recentlyTestedIndices = [];
                 return Math.floor(Math.random() * animals.length);
             }
             
-            // Get a random index from available indices
             const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-            
-            // Add this index to recently tested (will be removed after 10 rounds)
             recentlyTestedIndices.push(randomIndex);
             
-            // Keep only the last 10 tested indices
             if (recentlyTestedIndices.length > 10) {
                 recentlyTestedIndices.shift();
             }
@@ -416,7 +445,6 @@
             } else {
                 testFeedback.textContent = `Incorrect. The correct answer is "${animals[currentTestIndex].translation}".`;
                 testFeedback.className = 'text-lg mt-4 text-center text-red-600';
-                // Clear the input field when answer is wrong
                 testInput.value = '';
             }
         }
@@ -442,9 +470,12 @@
             document.getElementById(sectionId).classList.remove('hidden');
             document.getElementById(`${sectionId}-tab`).classList.add('tab-active');
             
-            // Reset sections when shown
             if (sectionId === 'flashcards-section') {
-                currentFlashcardIndex = Math.floor(Math.random() * animals.length);
+                if (flashcardMode === 'random') {
+                    currentFlashcardIndex = getRandomFlashcardIndex();
+                } else {
+                    currentFlashcardIndex = 0;
+                }
                 showFlashcard();
             } else if (sectionId === 'test-section') {
                 setupTest();
